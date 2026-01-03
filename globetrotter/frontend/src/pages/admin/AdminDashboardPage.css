@@ -1,0 +1,72 @@
+.admin-page .stat-card.gradient {
+    background: var(--gradient-nature);
+}
+
+.stat-sub {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-top: var(--space-xs);
+}
+
+.stat-card.gradient .stat-sub {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.popular-dests-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.popular-dest-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.popular-dest-item .rank {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.popular-dest-item .name {
+    flex: 1;
+}
+
+.popular-dest-item .count {
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.users-table th,
+.users-table td {
+    padding: var(--space-md);
+    text-align: left;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.users-table th {
+    font-weight: 600;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.users-table .form-select {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.875rem;
+}

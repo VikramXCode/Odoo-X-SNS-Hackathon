@@ -79,31 +79,31 @@ print_header() {
 generate_secure_password() {
     # Generate a 24-character password with mixed case, numbers, and safe symbols
     local length=${1:-24}
-    
+
     # Test if /dev/urandom exists
     if [[ ! -r "/dev/urandom" ]]; then
         echo "ERROR: /dev/urandom not readable" >&2
         return 1
     fi
-    
+
     # Try the main approach
     if command -v tr &>/dev/null; then
         LC_ALL=C tr -dc 'A-Za-z0-9!#$%&*+-=?@^_' </dev/urandom 2>/dev/null | head -c "$length" 2>/dev/null
         return 0
     fi
-    
+
     # Fallback approach using od
     if command -v od &>/dev/null; then
         dd if=/dev/urandom bs=1 count=100 2>/dev/null | od -An -tx1 | tr -d ' \n' | cut -c1-"$length"
         return 0
     fi
-    
+
     # Last resort - use openssl if available
     if command -v openssl &>/dev/null; then
         openssl rand -base64 32 | tr -d "=+/" | cut -c1-"$length"
         return 0
     fi
-    
+
     echo "ERROR: No suitable random generation method found" >&2
     return 1
 }
@@ -134,7 +134,7 @@ validate_url() {
 extract_port_from_url() {
     local url="$1"
     local default_port="$2"
-    
+
     # Extract port from URL using regex
     if [[ $url =~ :([0-9]+) ]]; then
         echo "${BASH_REMATCH[1]}"
@@ -153,7 +153,7 @@ extract_port_from_url() {
 check_port_availability() {
     local port="$1"
     local service_name="$2"
-    
+
     # Check if port is in use
     if command -v netstat &>/dev/null; then
         if netstat -ln 2>/dev/null | grep -q ":$port "; then
@@ -180,21 +180,21 @@ check_port_availability() {
 
 check_dependencies() {
     log_info "Checking system dependencies..."
-    
+
     local missing_deps=()
-    
+
     if ! command -v curl &>/dev/null; then
         missing_deps+=("curl")
     fi
-    
+
     if ! command -v docker &>/dev/null; then
         missing_deps+=("docker")
     fi
-    
+
     if ! command -v docker-compose &>/dev/null && ! docker compose version &>/dev/null; then
         missing_deps+=("docker-compose")
     fi
-    
+
     if [ ${#missing_deps[@]} -ne 0 ]; then
         log_error "Missing dependencies: ${missing_deps[*]}"
         echo ""
@@ -214,13 +214,13 @@ check_dependencies() {
         done
         exit 1
     fi
-    
+
     log_success "All dependencies are installed"
 }
 
 check_docker_status() {
     log_info "Checking Docker daemon status..."
-    
+
     if ! docker info &>/dev/null; then
         log_error "Docker daemon is not running"
         echo ""
@@ -229,7 +229,7 @@ check_docker_status() {
         echo "  • On Linux: sudo systemctl start docker"
         exit 1
     fi
-    
+
     log_success "Docker daemon is running"
 }
 
@@ -239,7 +239,7 @@ check_docker_status() {
 
 create_directory() {
     log_info "Setting up installation directory: $INSTALL_DIR"
-    
+
     if [ -d "$INSTALL_DIR" ]; then
         log_warning "Directory already exists"
         echo ""
@@ -252,7 +252,7 @@ create_directory() {
         mkdir -p "$INSTALL_DIR"
         log_success "Created directory: $INSTALL_DIR"
     fi
-    
+
     cd "$INSTALL_DIR" || {
         log_error "Failed to change to directory: $INSTALL_DIR"
         exit 1
@@ -274,14 +274,14 @@ check_running_container() {
 
 download_files() {
     log_info "Downloading configuration files..."
-    
+
     # Download with better error handling
     if ! curl -fsSL --connect-timeout 10 --max-time 30 "$COMPOSE_FILE_URL" -o docker-compose.yml; then
         log_error "Failed to download docker-compose.yml"
         exit 1
     fi
     log_success "docker-compose.yml downloaded"
-    
+
     if ! curl -fsSL --connect-timeout 10 --max-time 30 "$ENV_FILE_URL" -o .env; then
         log_error "Failed to download .env template"
         exit 1
@@ -298,13 +298,13 @@ prompt_configuration() {
     echo ""
     echo "⚠️  Note: The installer will automatically configure Docker ports based on your URLs"
     echo ""
-    
+
     # Frontend URL
     local default_frontend="http://localhost:8015"
     while true; do
         read -r -p "🌐 Frontend URL [$default_frontend]: " input_frontend
         FRONTEND_ORIGIN=${input_frontend:-$default_frontend}
-        
+
         if validate_url "$FRONTEND_ORIGIN"; then
             FRONTEND_PORT=$(extract_port_from_url "$FRONTEND_ORIGIN" "8015")
             break
@@ -313,13 +313,13 @@ prompt_configuration() {
         fi
     done
     log_success "Frontend URL: $FRONTEND_ORIGIN (Port: $FRONTEND_PORT)"
-    
+
     # Backend URL
     local default_backend="http://localhost:8016"
     while true; do
         read -r -p "🔧 Backend URL [$default_backend]: " input_backend
         BACKEND_URL=${input_backend:-$default_backend}
-        
+
         if validate_url "$BACKEND_URL"; then
             BACKEND_PORT=$(extract_port_from_url "$BACKEND_URL" "8016")
             break
@@ -328,26 +328,26 @@ prompt_configuration() {
         fi
     done
     log_success "Backend URL: $BACKEND_URL (Port: $BACKEND_PORT)"
-    
+
     # Check port availability
     check_port_availability "$FRONTEND_PORT" "frontend"
     check_port_availability "$BACKEND_PORT" "backend"
-    
+
     echo ""
 }
 
 configure_environment_fallback() {
     log_info "Using simple configuration approach..."
-    
+
     # Generate simple passwords using a basic method
     DB_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32)"
     ADMIN_PASSWORD="$(date +%s | sha256sum | base64 | head -c 24)"
-    
+
     log_info "Generated passwords using fallback method"
-    
+
     # Create backup
     cp .env .env.backup
-    
+
     # Use simple string replacement with perl if available
     if command -v perl &>/dev/null; then
         log_info "Using perl for configuration..."
@@ -362,7 +362,7 @@ configure_environment_fallback() {
         # Add port configuration
         perl -pi -e "s/^FRONTEND_PORT=.*/FRONTEND_PORT=$FRONTEND_PORT/" .env
         perl -pi -e "s/^BACKEND_PORT=.*/BACKEND_PORT=$BACKEND_PORT/" .env
-        
+
         # Add port variables if they don't exist
         if ! grep -q "^FRONTEND_PORT=" .env; then
             echo "FRONTEND_PORT=$FRONTEND_PORT" >> .env
@@ -370,13 +370,13 @@ configure_environment_fallback() {
         if ! grep -q "^BACKEND_PORT=" .env; then
             echo "BACKEND_PORT=$BACKEND_PORT" >> .env
         fi
-        
+
         if grep -q "POSTGRES_PASSWORD=$DB_PASSWORD" .env; then
             log_success "Configuration completed successfully"
             return 0
         fi
     fi
-    
+
     # Manual approach - create .env from scratch with key variables
     log_info "Creating minimal .env configuration..."
     cat > .env << EOF
@@ -404,21 +404,21 @@ BACKEND_PORT=$BACKEND_PORT
 # Additional Settings
 DEBUG=False
 EOF
-    
+
     log_success "Created minimal .env configuration"
     return 0
 }
 
 configure_environment() {
     log_info "Generating secure configuration..."
-    
+
     # Debug: Test password generation first
     log_info "Testing password generation..."
     if ! command -v tr &>/dev/null; then
         log_error "tr command not found - required for password generation"
         exit 1
     fi
-    
+
     # Generate secure passwords with error checking
     log_info "Generating database password..."
     DB_PASSWORD=$(generate_secure_password 32)
@@ -427,7 +427,7 @@ configure_environment() {
         exit 1
     fi
     log_success "Database password generated (${#DB_PASSWORD} characters)"
-    
+
     log_info "Generating admin password..."
     ADMIN_PASSWORD=$(generate_secure_password 24)
     if [[ -z "$ADMIN_PASSWORD" ]]; then
@@ -435,38 +435,38 @@ configure_environment() {
         exit 1
     fi
     log_success "Admin password generated (${#ADMIN_PASSWORD} characters)"
-    
+
     # Debug: Check if .env file exists and is readable
     log_info "Checking .env file..."
     if [[ ! -f ".env" ]]; then
         log_error ".env file not found"
         exit 1
     fi
-    
+
     if [[ ! -r ".env" ]]; then
         log_error ".env file is not readable"
         exit 1
     fi
-    
+
     log_info "File check passed - .env exists and is readable ($(wc -l < .env) lines)"
-    
+
     # Try fallback method first (simpler and more reliable)
     log_info "Attempting configuration..."
     if configure_environment_fallback; then
         return 0
     fi
-    
+
     log_warning "Fallback method failed, trying advanced processing..."
-    
+
     # Fallback to bash processing
     # Create backup of original .env
     cp .env .env.backup
-    
+
     # Create a new .env file by processing the original line by line
     local temp_file=".env.temp"
     local processed_lines=0
     local updated_lines=0
-    
+
     while IFS= read -r line || [[ -n "$line" ]]; do
         ((processed_lines++))
         case "$line" in
@@ -511,7 +511,7 @@ configure_environment() {
                 ;;
         esac
     done < .env > "$temp_file"
-    
+
     # Add port variables if they weren't found in the original file
     if ! grep -q "^FRONTEND_PORT=" "$temp_file"; then
         echo "FRONTEND_PORT=$FRONTEND_PORT" >> "$temp_file"
@@ -521,15 +521,15 @@ configure_environment() {
         echo "BACKEND_PORT=$BACKEND_PORT" >> "$temp_file"
         ((updated_lines++))
     fi
-    
+
     log_info "Processed $processed_lines lines, updated $updated_lines configuration values"
-    
+
     # Check if temp file was created successfully
     if [[ ! -f "$temp_file" ]]; then
         log_error "Failed to create temporary configuration file"
         exit 1
     fi
-    
+
     # Replace the original .env with the configured one
     if mv "$temp_file" .env; then
         log_success "Environment configured with secure passwords and port settings"
@@ -540,7 +540,7 @@ configure_environment() {
         rm -f "$temp_file"
         exit 1
     fi
-    
+
     # Verify critical configuration was applied
     if grep -q "POSTGRES_PASSWORD=$DB_PASSWORD" .env && (grep -q "DATABASE_PASSWORD=$DB_PASSWORD" .env || grep -q "POSTGRES_PASSWORD=$DB_PASSWORD" .env); then
         log_success "Configuration verification passed - database password variables set"
@@ -553,7 +553,7 @@ configure_environment() {
         mv .env.backup .env
         exit 1
     fi
-    
+
     # Verify port configuration
     if grep -q "FRONTEND_PORT=$FRONTEND_PORT" .env && grep -q "BACKEND_PORT=$BACKEND_PORT" .env; then
         log_success "Port configuration verified - frontend: $FRONTEND_PORT, backend: $BACKEND_PORT"
@@ -564,20 +564,20 @@ configure_environment() {
 
 update_docker_compose_ports() {
     log_info "Updating Docker Compose port configuration..."
-    
+
     # Create backup of docker-compose.yml
     cp docker-compose.yml docker-compose.yml.backup
-    
+
     # Update ports in docker-compose.yml using sed
     if command -v sed &>/dev/null; then
         # For frontend service port mapping
         sed -i.tmp "s/\"[0-9]*:3000\"/\"$FRONTEND_PORT:3000\"/g" docker-compose.yml
-        # For backend service port mapping  
+        # For backend service port mapping
         sed -i.tmp "s/\"[0-9]*:8000\"/\"$BACKEND_PORT:8000\"/g" docker-compose.yml
-        
+
         # Clean up temporary files created by sed -i
         rm -f docker-compose.yml.tmp
-        
+
         log_success "Docker Compose ports updated - Frontend: $FRONTEND_PORT, Backend: $BACKEND_PORT"
     else
         log_warning "sed command not available - Docker Compose ports may need manual configuration"
@@ -587,7 +587,7 @@ update_docker_compose_ports() {
 start_services() {
     log_info "Starting Global Router services..."
     echo ""
-    
+
     # Use docker compose or docker-compose based on availability
     local compose_cmd
     if docker compose version &>/dev/null; then
@@ -595,11 +595,11 @@ start_services() {
     else
         compose_cmd="docker-compose"
     fi
-    
+
     # Pull images first for better progress indication
     log_info "Pulling required Docker images..."
     $compose_cmd pull
-    
+
     # Start services
     log_info "Starting containers..."
     if $compose_cmd up -d --remove-orphans; then
@@ -615,12 +615,12 @@ start_services() {
 
 wait_for_services() {
     log_info "Waiting for services to be ready... (up to 90 seconds, first startup may take longer)"
-    
+
     local max_attempts=45  # 45 attempts * 2 seconds = 90 seconds total
     local attempt=1
     local frontend_ready=false
     local backend_ready=false
-    
+
     while [ $attempt -le $max_attempts ]; do
         # Check frontend
         if [ "$frontend_ready" = false ]; then
@@ -629,7 +629,7 @@ wait_for_services() {
                 frontend_ready=true
             fi
         fi
-        
+
         # Check backend
         if [ "$backend_ready" = false ]; then
             if curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL" | grep -q "200\|404\|302"; then
@@ -637,12 +637,12 @@ wait_for_services() {
                 backend_ready=true
             fi
         fi
-        
+
         # If both are ready, break the loop
         if [ "$frontend_ready" = true ] && [ "$backend_ready" = true ]; then
             break
         fi
-        
+
         # Check if we've reached max attempts
         if [ $attempt -eq $max_attempts ]; then
             if [ "$frontend_ready" = false ]; then
@@ -653,7 +653,7 @@ wait_for_services() {
             fi
             break
         fi
-        
+
         # Wait and increment counter
         printf "."
         sleep 2
@@ -740,17 +740,17 @@ print_failure_message() {
 
 cleanup_on_failure() {
     log_info "Cleaning up after failure..."
-    
+
     if [ -f ".env.backup" ]; then
         mv .env.backup .env
         log_info "Restored original .env file"
     fi
-    
+
     if [ -f "docker-compose.yml.backup" ]; then
         mv docker-compose.yml.backup docker-compose.yml
         log_info "Restored original docker-compose.yml file"
     fi
-    
+
     if command -v docker &>/dev/null; then
         docker compose down --remove-orphans 2>/dev/null || true
     fi
@@ -763,7 +763,7 @@ cleanup_on_failure() {
 main() {
     # Set up error handling
     trap 'cleanup_on_failure; print_failure_message; exit 1' ERR
-    
+
     # Installation steps
     print_header
     check_dependencies
@@ -777,7 +777,7 @@ main() {
     start_services
     wait_for_services
     print_success_message
-    
+
     # Clean up backup files on success
     rm -f .env.backup
     rm -f docker-compose.yml.backup

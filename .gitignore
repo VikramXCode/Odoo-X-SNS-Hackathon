@@ -3,3 +3,17 @@
 .vscode/settings.json
 .pnpm-store/
 .env
+
+# Node / JS dependencies
+node_modules/
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Build outputs
+dist/
+build/
+
+# OS junk
+.DS_Store

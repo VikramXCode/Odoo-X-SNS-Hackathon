@@ -1,7 +1,7 @@
 <div align="center">
 
   <h1>Global Router</h1>
-  
+
   <p>
     Project by: Vikramrajpurohit O, Shivanisri M, Taksshinamoorthy VT, Tharun R
   </p>
@@ -32,7 +32,7 @@ Global Router is a project designed to manage and route global traffic efficient
 
 ### 📷 Screenshots
 
-<div align="center"> 
+<div align="center">
   <img src="./brand/screenshots/adventures.png" alt="Locations" />
   <p>Displays the locations you have visited and the ones you plan to embark on. You can also filter and sort the locations.</p>
   <img src="./brand/screenshots/details.png" alt="Location Details" />

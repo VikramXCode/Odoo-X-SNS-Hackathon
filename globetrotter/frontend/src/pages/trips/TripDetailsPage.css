@@ -1,0 +1,133 @@
+.trip-details-page {
+    min-height: 100vh;
+}
+
+.trip-hero {
+    height: 320px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.trip-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.1) 100%);
+    display: flex;
+    align-items: flex-end;
+    padding: var(--space-xl);
+}
+
+.trip-hero-content h1 {
+    color: var(--white);
+    font-size: 2rem;
+    margin: var(--space-sm) 0;
+}
+
+.trip-hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9375rem;
+}
+
+.trip-details-content {
+    margin-top: calc(-1 * var(--space-xl));
+    position: relative;
+    z-index: 1;
+}
+
+.trip-actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+    background: var(--white);
+    padding: var(--space-md);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.trip-overview-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-lg);
+}
+
+.budget-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.budget-item {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.budget-item:first-child {
+    font-weight: 600;
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-sm);
+    border-bottom: 2px solid var(--primary);
+}
+
+.destinations-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.timeline-item {
+    display: flex;
+    gap: var(--space-lg);
+}
+
+.timeline-marker {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.timeline-content h4 {
+    font-size: 1.0625rem;
+    margin-bottom: var(--space-xs);
+}
+
+.share-url-box {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.share-url-box .form-input {
+    flex: 1;
+    background: var(--gray-50);
+}
+
+@media (max-width: 768px) {
+    .trip-overview-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .trip-actions-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .trip-actions-bar>div {
+        flex-wrap: wrap;
+    }
+}

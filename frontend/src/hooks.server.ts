@@ -11,7 +11,7 @@ if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'unde
         length: 0,
         key: () => null
     };
-    
+
     try {
         // @ts-ignore
         global.localStorage = noopStorage;
