@@ -1,0 +1,36 @@
+services:
+  web:
+    build: ./frontend/
+    #image: ghcr.io/seanmorley15/globalrouter-frontend:latest
+    container_name: global-router-frontend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${FRONTEND_PORT:-8015}:3000"
+    depends_on:
+      - server
+
+  db:
+    image: imresamu/postgis:15-3.3-alpine3.21
+    container_name: global-router-db
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  server:
+    build: ./backend/
+    #image: ghcr.io/seanmorley15/globalrouter-backend:latest
+    container_name: global-router-backend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${BACKEND_PORT:-8016}:80"
+    depends_on:
+      - db
+    volumes:
+      - global_router_media:/code/media/
+
+volumes:
+  postgres_data:
+  global_router_media:

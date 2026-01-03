@@ -1,0 +1,121 @@
+import type { Handle } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
+
+// Polyfill or fix broken localStorage in SSR environment
+if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'undefined') {
+    const noopStorage = {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+        clear: () => {},
+        length: 0,
+        key: () => null
+    };
+    
+    try {
+        // @ts-ignore
+        global.localStorage = noopStorage;
+    } catch (e) {
+        console.error('Failed to patch localStorage:', e);
+        // If we can't overwrite it, we might be stuck, but let's try defining it on globalThis
+        try {
+             // @ts-ignore
+            Object.defineProperty(globalThis, 'localStorage', {
+                value: noopStorage,
+                writable: true
+            });
+        } catch (e2) {
+             console.error('Failed to define localStorage on globalThis:', e2);
+        }
+    }
+}
+
+const PUBLIC_SERVER_URL = process.env['PUBLIC_SERVER_URL'];
+
+export const authHook: Handle = async ({ event, resolve }) => {
+	event.cookies.delete('csrftoken', { path: '/' });
+	try {
+		let sessionid = event.cookies.get('sessionid');
+
+		if (!sessionid) {
+			event.locals.user = null;
+			return await resolve(event);
+		}
+
+		const serverEndpoint = PUBLIC_SERVER_URL || 'http://localhost:8000';
+
+		const cookie = event.request.headers.get('cookie') || '';
+
+		let userFetch = await event.fetch(`${serverEndpoint}/auth/user-metadata/`, {
+			headers: {
+				cookie
+			}
+		});
+
+		if (!userFetch.ok) {
+			event.locals.user = null;
+			event.cookies.delete('sessionid', { path: '/', secure: event.url.protocol === 'https:' });
+			return await resolve(event);
+		}
+
+		if (userFetch.ok) {
+			const user = await userFetch.json();
+			event.locals.user = user;
+			const setCookieHeader = userFetch.headers.get('Set-Cookie');
+
+			if (setCookieHeader) {
+				// Regular expression to match sessionid cookie and its expiry
+				const sessionIdRegex = /sessionid=([^;]+).*?expires=([^;]+)/;
+				const match = setCookieHeader.match(sessionIdRegex);
+
+				if (match) {
+					const sessionId = match[1];
+					const expiryString = match[2];
+					const expiryDate = new Date(expiryString);
+
+					// Set the sessionid cookie
+					event.cookies.set('sessionid', sessionId, {
+						path: '/',
+						httpOnly: true,
+						sameSite: 'lax',
+						secure: event.url.protocol === 'https:',
+						expires: expiryDate
+					});
+				}
+			}
+		} else {
+			event.locals.user = null;
+			event.cookies.delete('sessionid', { path: '/', secure: event.url.protocol === 'https:' });
+		}
+	} catch (error) {
+		console.error('Error in authHook:', error);
+		event.locals.user = null;
+		event.cookies.delete('sessionid', { path: '/', secure: event.url.protocol === 'https:' });
+	}
+
+	return await resolve(event);
+};
+
+export const themeHook: Handle = async ({ event, resolve }) => {
+	let theme = event.url.searchParams.get('theme') || event.cookies.get('colortheme');
+
+	if (theme) {
+		return await resolve(event, {
+			transformPageChunk: ({ html }) => html.replace('data-theme=""', `data-theme="${theme}"`)
+		});
+	}
+
+	return await resolve(event);
+};
+
+// hook to get the langauge cookie and set the locale
+export const i18nHook: Handle = async ({ event, resolve }) => {
+	let locale = event.cookies.get('locale');
+	if (!locale) {
+		return await resolve(event);
+	}
+	event.locals.locale = locale; // Store the locale in locals
+	return await resolve(event);
+};
+
+export const handle = sequence(authHook, themeHook, i18nHook);

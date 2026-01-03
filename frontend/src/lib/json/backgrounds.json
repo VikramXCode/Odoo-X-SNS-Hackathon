@@ -1,0 +1,44 @@
+{
+	"backgrounds": [
+		{
+			"url": "backgrounds/adventurelog_showcase_1.webp",
+			"author": "Global Router Team",
+			"location": "Franconia Notch State Park, New Hampshire, USA"
+		},
+		{
+			"url": "backgrounds/adventurelog_showcase_2.webp",
+			"author": "Global Router Team",
+			"location": "Tumbledown Mountain, Maine, USA"
+		},
+		{
+			"url": "backgrounds/adventurelog_showcase_3.webp",
+			"author": "Global Router Team",
+			"location": "Philmont Scout Ranch, New Mexico, USA"
+		},
+		{
+			"url": "backgrounds/adventurelog_showcase_4.webp",
+			"author": "Global Router Team",
+			"location": "Great Sand Dunes National Park, Colorado, USA"
+		},
+		{
+			"url": "backgrounds/adventurelog_showcase_5.webp",
+			"author": "Global Router Team",
+			"location": "Hoboken, New Jersey, USA"
+		},
+		{
+			"url": "backgrounds/adventurelog_showcase_6.webp",
+			"author": "Global Router Team",
+			"location": "Smugglers' Notch Resort, Vermont, USA"
+		},
+		{
+			"url": "backgrounds/adventurelog_showcase_7.webp",
+			"author": "Global Router Team",
+			"location": "Davos, Switzerland"
+		},
+		{
+			"url": "backgrounds/adventurelog_showcase_8.webp",
+			"author": "Global Router Team",
+			"location": "Saddleback Ski Area, Maine, USA"
+		}
+	]
+}

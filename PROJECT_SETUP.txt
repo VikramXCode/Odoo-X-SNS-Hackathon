@@ -1,0 +1,724 @@
+================================================================================
+                          GLOBAL ROUTER - PROJECT SETUP GUIDE
+================================================================================
+
+Global Router is a self-hosted travel companion for logging adventures, 
+tracking visited locations on a world map, planning trips, and sharing 
+experiences with friends and family.
+
+================================================================================
+                              TABLE OF CONTENTS
+================================================================================
+
+1. SYSTEM REQUIREMENTS
+2. PROJECT STRUCTURE
+3. ENVIRONMENT SETUP
+4. RUNNING THE PROJECT
+   - Option A: Using Docker (Recommended)
+   - Option B: Running Locally
+5. API DOCUMENTATION
+6. TROUBLESHOOTING
+
+================================================================================
+                           1. SYSTEM REQUIREMENTS
+================================================================================
+
+FRONTEND:
+---------
+  • Node.js >= 18.x
+  • npm or pnpm (recommended: pnpm)
+
+BACKEND:
+--------
+  • Python >= 3.11
+  • PostgreSQL 15+ with PostGIS extension
+  • GDAL library (for geospatial features)
+
+DOCKER (Recommended):
+--------------------
+  • Docker Desktop >= 4.x
+  • Docker Compose >= 2.x
+
+================================================================================
+                           2. PROJECT STRUCTURE
+================================================================================
+
+Global Router-main/
+├── frontend/                 # SvelteKit frontend application
+│   ├── src/                  # Source code
+│   ├── static/               # Static assets
+│   ├── package.json          # Node.js dependencies
+│   └── .env                  # Frontend environment variables
+│
+├── backend/
+│   └── server/               # Django backend application
+│       ├── adventures/       # Adventures app
+│       ├── users/            # User management
+│       ├── worldtravel/      # World travel data
+│       ├── integrations/     # Third-party integrations
+│       ├── requirements.txt  # Python dependencies
+│       ├── manage.py         # Django management script
+│       └── .env              # Backend environment variables
+│
+├── docker-compose.yml        # Docker Compose configuration
+├── .env                      # Root environment variables (for Docker)
+└── documentation/            # Project documentation
+
+================================================================================
+                           3. ENVIRONMENT SETUP
+================================================================================
+
+Three .env files are required:
+
+A) ROOT .env (for Docker Compose)
+---------------------------------
+Location: /Global Router-main/.env
+
+Required Variables:
+  PUBLIC_SERVER_URL=http://server:8000
+  ORIGIN=http://localhost:8015
+  BODY_SIZE_LIMIT=Infinity
+  FRONTEND_PORT=8015
+  
+  PGHOST=db
+  POSTGRES_DB=globalrouter
+  POSTGRES_USER=adventure
+  POSTGRES_PASSWORD=<your_secure_password>
+  
+  SECRET_KEY=<your_django_secret_key>
+  DJANGO_ADMIN_USERNAME=admin
+  DJANGO_ADMIN_PASSWORD=<admin_password>
+  DJANGO_ADMIN_EMAIL=admin@example.com
+  PUBLIC_URL=http://localhost:8016
+  CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+  DEBUG=False
+  FRONTEND_URL=http://localhost:8015
+  BACKEND_PORT=8016
+
+
+B) FRONTEND .env
+----------------
+Location: /Global Router-main/frontend/.env
+
+Required Variables:
+  PUBLIC_SERVER_URL=http://127.0.0.1:8000
+  BODY_SIZE_LIMIT=Infinity
+
+Optional:
+  PUBLIC_UMAMI_SRC=<analytics_url>
+  PUBLIC_UMAMI_WEBSITE_ID=<website_id>
+
+
+C) BACKEND .env
+---------------
+Location: /Global Router-main/backend/server/.env
+
+Required Variables:
+  PGHOST=localhost
+  PGDATABASE=globalrouter
+  PGUSER=<your_db_user>
+  PGPASSWORD=<your_db_password>
+  
+  SECRET_KEY=<your_django_secret_key>
+  PUBLIC_URL=http://127.0.0.1:8000
+  FRONTEND_URL=http://localhost:5173
+  DEBUG=True
+  EMAIL_BACKEND=console
+
+Optional:
+  GOOGLE_MAPS_API_KEY=<your_api_key>
+  STRAVA_CLIENT_ID=<strava_client_id>
+  STRAVA_CLIENT_SECRET=<strava_client_secret>
+
+================================================================================
+                           4. RUNNING THE PROJECT
+================================================================================
+
+----------------------
+OPTION A: Using Docker (Recommended)
+----------------------
+
+1. Install Docker Desktop:
+   https://www.docker.com/products/docker-desktop/
+
+2. Copy environment file:
+   cp .env.example .env
+
+3. Update .env with your configuration
+
+4. Start all services:
+   docker-compose up -d
+
+5. Access the application:
+   - Frontend: http://localhost:8015
+   - Backend API: http://localhost:8016
+   - API Docs: http://localhost:8016/api/docs/
+
+6. Stop services:
+   docker-compose down
+
+
+----------------------
+OPTION B: Running Locally
+----------------------
+
+PREREQUISITES:
+  
+  macOS:
+    brew install gdal postgresql@15 postgis
+    brew services start postgresql@15
+  
+  Ubuntu/Debian:
+    sudo apt install gdal-bin libgdal-dev postgresql-15 postgresql-15-postgis-3
+    sudo systemctl start postgresql
+
+STEP 1: Set up PostgreSQL Database
+-----------------------------------
+  # Create database
+  createdb globalrouter
+  
+  # Enable PostGIS extension
+  psql -d globalrouter -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+
+
+STEP 2: Install Backend Dependencies
+------------------------------------
+  cd backend/server
+  
+  # Create virtual environment (recommended)
+  python3 -m venv venv
+  source venv/bin/activate  # Linux/macOS
+  # or: venv\Scripts\activate  # Windows
+  
+  # Install dependencies
+  pip install -r requirements.txt
+  
+  # Copy environment file
+  cp sample.env .env
+  # Edit .env with your database credentials
+
+
+STEP 3: Run Django Migrations
+-----------------------------
+  cd backend/server
+  python3 manage.py migrate
+  
+  # Create superuser
+  python3 manage.py createsuperuser
+
+
+STEP 4: Start Backend Server
+----------------------------
+  cd backend/server
+  python3 manage.py runserver
+  
+  # Backend will run at: http://127.0.0.1:8000
+
+
+STEP 5: Install Frontend Dependencies
+-------------------------------------
+  cd frontend
+  
+  # Using npm:
+  npm install
+  
+  # Or using pnpm (recommended):
+  pnpm install
+  
+  # Copy environment file
+  cp sample.env .env
+
+
+STEP 6: Start Frontend Server
+-----------------------------
+  cd frontend
+  npm run dev
+  
+  # Frontend will run at: http://localhost:5173
+
+================================================================================
+                           5. API DOCUMENTATION
+================================================================================
+
+Global Router uses Django REST Framework with drf-yasg for API documentation.
+
+API ENDPOINTS:
+--------------
+Base URL: http://localhost:8000/api/ (local) or http://localhost:8016/api/ (Docker)
+
+Authentication:
+  POST   /api/auth/login/           - User login
+  POST   /api/auth/logout/          - User logout
+  POST   /api/auth/register/        - User registration
+  GET    /api/auth/user/            - Get current user
+
+Adventures:
+  GET    /api/adventures/           - List all adventures
+  POST   /api/adventures/           - Create new adventure
+  GET    /api/adventures/{id}/      - Get adventure details
+  PUT    /api/adventures/{id}/      - Update adventure
+  DELETE /api/adventures/{id}/      - Delete adventure
+
+Collections (Itineraries):
+  GET    /api/collections/          - List collections
+  POST   /api/collections/          - Create collection
+  GET    /api/collections/{id}/     - Get collection details
+  PUT    /api/collections/{id}/     - Update collection
+  DELETE /api/collections/{id}/     - Delete collection
+
+World Travel:
+  GET    /api/worldtravel/countries/     - List all countries
+  GET    /api/worldtravel/regions/       - List regions
+  GET    /api/worldtravel/visited/       - Get visited locations
+
+Integrations:
+  GET    /api/integrations/strava/       - Strava integration
+  POST   /api/integrations/gpx/upload/   - Upload GPX file
+
+
+SWAGGER DOCUMENTATION:
+----------------------
+  - Swagger UI: http://localhost:8000/api/docs/
+  - ReDoc: http://localhost:8000/api/redoc/
+  - OpenAPI Schema: http://localhost:8000/api/schema/
+
+
+AUTHENTICATION:
+---------------
+The API uses session-based authentication with django-allauth.
+
+For API requests, include the session cookie or use token authentication:
+  Authorization: Token <your_token>
+
+================================================================================
+                           6. TROUBLESHOOTING
+================================================================================
+
+COMMON ISSUES:
+
+1. "Could not find the GDAL library"
+   --------------------------------
+   Solution: Install GDAL
+   - macOS: brew install gdal
+   - Ubuntu: sudo apt install gdal-bin libgdal-dev
+
+2. "Connection refused" for PostgreSQL
+   -----------------------------------
+   Solution: Ensure PostgreSQL is running
+   - macOS: brew services start postgresql@15
+   - Ubuntu: sudo systemctl start postgresql
+
+3. "PostGIS extension not found"
+   -----------------------------
+   Solution: Install PostGIS and create extension
+   - macOS: brew install postgis
+   - Then: psql -d globalrouter -c "CREATE EXTENSION postgis;"
+
+4. "Port already in use"
+   ---------------------
+   Solution: Change port in .env or kill existing process
+   - Find process: lsof -i :5173
+   - Kill process: kill -9 <PID>
+
+5. Frontend shows API errors
+   -------------------------
+   Solution: Ensure backend is running and PUBLIC_SERVER_URL is correct
+   - Check backend: curl http://127.0.0.1:8000/api/
+   - Verify .env: PUBLIC_SERVER_URL=http://127.0.0.1:8000
+
+================================================================================
+                              USEFUL COMMANDS
+================================================================================
+
+# Frontend
+npm run dev           # Start development server
+npm run build         # Build for production
+npm run preview       # Preview production build
+npm run lint          # Run linter
+npm run format        # Format code
+
+# Backend
+python3 manage.py runserver           # Start dev server
+python3 manage.py migrate             # Run migrations
+python3 manage.py createsuperuser     # Create admin user
+python3 manage.py collectstatic       # Collect static files
+python3 manage.py shell               # Django shell
+
+# Docker
+docker-compose up -d                  # Start all services
+docker-compose down                   # Stop all services
+docker-compose logs -f                # View logs
+docker-compose restart                # Restart services
+
+================================================================================
+                              TECH STACK
+================================================================================
+
+FRONTEND:
+  • SvelteKit      - Web framework
+  • TailwindCSS    - Utility CSS
+  • DaisyUI        - Component library
+  • MapLibre       - Maps
+  • Vite           - Build tool
+
+BACKEND:
+  • Django 5.2     - Web framework
+  • Django REST Framework - API
+  • PostgreSQL     - Database
+  • PostGIS        - Geospatial
+  • AllAuth        - Authentication
+
+================================================================================
+                           7. DATABASE SCHEMA
+================================================================================
+
+This section describes all data stored in the PostgreSQL database.
+
+------------------------------------------------------------------------------
+7.1 USERS TABLE (users_customuser)
+------------------------------------------------------------------------------
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | Integer       | Primary key
+  username              | String        | User login name
+  email                 | String        | Email address (unique)
+  password              | String        | Hashed password
+  profile_pic           | Image         | Profile picture (WEBP)
+  uuid                  | UUID          | Unique identifier
+  public_profile        | Boolean       | Is profile public?
+  disable_password      | Boolean       | Disable password login
+  measurement_system    | String        | 'metric' or 'imperial'
+  first_name            | String        | User's first name
+  last_name             | String        | User's last name
+  is_active             | Boolean       | Account active status
+  date_joined           | DateTime      | Registration date
+
+------------------------------------------------------------------------------
+7.2 LOCATIONS TABLE (adventures_location)
+------------------------------------------------------------------------------
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner of the location
+  category_id           | FK → Category | Location category
+  name                  | String(200)   | Location name
+  location              | String(200)   | Address/place description
+  description           | Text          | Detailed description
+  latitude              | Decimal(9,6)  | GPS latitude
+  longitude             | Decimal(9,6)  | GPS longitude
+  rating                | Float         | User rating (0-5)
+  link                  | URL           | External link
+  tags                  | Array         | List of tags
+  is_public             | Boolean       | Public visibility
+  city_id               | FK → City     | Associated city
+  region_id             | FK → Region   | Associated region
+  country_id            | FK → Country  | Associated country
+  created_at            | DateTime      | Creation timestamp
+  updated_at            | DateTime      | Last update timestamp
+
+------------------------------------------------------------------------------
+7.3 VISITS TABLE (adventures_visit)
+------------------------------------------------------------------------------
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  location_id           | FK → Location | Associated location
+  start_date            | DateTime      | Visit start date/time
+  end_date              | DateTime      | Visit end date/time
+  timezone              | String(50)    | Timezone name
+  notes                 | Text          | Visit notes
+  created_at            | DateTime      | Creation timestamp
+  updated_at            | DateTime      | Last update timestamp
+
+------------------------------------------------------------------------------
+7.4 COLLECTIONS TABLE (adventures_collection)
+------------------------------------------------------------------------------
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner of collection
+  name                  | String(200)   | Collection name
+  description           | Text          | Description
+  start_date            | Date          | Trip start date
+  end_date              | Date          | Trip end date
+  is_public             | Boolean       | Public visibility
+  is_archived           | Boolean       | Archived status
+  link                  | URL           | External link
+  created_at            | DateTime      | Creation timestamp
+  updated_at            | DateTime      | Last update timestamp
+
+  MANY-TO-MANY:
+  - shared_with → Users (collaborators)
+  - locations → Locations (linked locations)
+
+------------------------------------------------------------------------------
+7.5 TRANSPORTATION TABLE (adventures_transportation)
+------------------------------------------------------------------------------
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  collection_id         | FK → Collection | Parent collection
+  type                  | String        | car, plane, train, bus, boat, bike, etc.
+  name                  | String(200)   | Transportation name
+  description           | Text          | Description
+  flight_number         | String(100)   | Flight number (if plane)
+  from_location         | String(200)   | Origin location name
+  to_location           | String(200)   | Destination location name
+  origin_latitude       | Decimal(9,6)  | Origin GPS latitude
+  origin_longitude      | Decimal(9,6)  | Origin GPS longitude
+  destination_latitude  | Decimal(9,6)  | Destination GPS latitude
+  destination_longitude | Decimal(9,6)  | Destination GPS longitude
+  date                  | DateTime      | Departure date/time
+  end_date              | DateTime      | Arrival date/time
+  start_timezone        | String(50)    | Departure timezone
+  end_timezone          | String(50)    | Arrival timezone
+  rating                | Float         | Rating
+  link                  | URL           | Booking link
+  is_public             | Boolean       | Public visibility
+
+------------------------------------------------------------------------------
+7.6 LODGING TABLE (adventures_lodging)
+------------------------------------------------------------------------------
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  collection_id         | FK → Collection | Parent collection
+  type                  | String        | hotel, hostel, bnb, cabin, resort, etc.
+  name                  | String(200)   | Lodging name
+  description           | Text          | Description
+  check_in              | DateTime      | Check-in date/time
+  check_out             | DateTime      | Check-out date/time
+  timezone              | String(50)    | Timezone
+  reservation_number    | String(100)   | Booking reference
+  price                 | Decimal(9,2)  | Cost
+  latitude              | Decimal(9,6)  | GPS latitude
+  longitude             | Decimal(9,6)  | GPS longitude
+  location              | String(200)   | Address
+  rating                | Float         | Rating
+  link                  | URL           | Booking link
+  is_public             | Boolean       | Public visibility
+
+------------------------------------------------------------------------------
+7.7 ACTIVITIES TABLE (adventures_activity)
+------------------------------------------------------------------------------
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  visit_id              | FK → Visit    | Parent visit
+  trail_id              | FK → Trail    | Associated trail (optional)
+  name                  | String(200)   | Activity name
+  sport_type            | String(100)   | Hiking, Running, Cycling, etc.
+  gpx_file              | File          | GPX track file
+  distance              | Float         | Distance in meters
+  elevation_gain        | Float         | Total ascent in meters
+  elevation_loss        | Float         | Total descent in meters
+  elev_high             | Float         | Highest elevation
+  elev_low              | Float         | Lowest elevation
+  moving_time           | Duration      | Time in motion
+  elapsed_time          | Duration      | Total time
+  rest_time             | Duration      | Rest time
+  average_speed         | Float         | Avg speed (m/s)
+  max_speed             | Float         | Max speed (m/s)
+  average_cadence       | Float         | Cadence
+  calories              | Float         | Calories burned
+  start_date            | DateTime      | Start date/time
+  start_date_local      | DateTime      | Local start time
+  timezone              | String(50)    | Timezone
+  start_lat / start_lng | Float         | Start GPS coordinates
+  end_lat / end_lng     | Float         | End GPS coordinates
+  external_service_id   | String(100)   | Strava ID, etc.
+
+------------------------------------------------------------------------------
+7.8 WORLD TRAVEL TABLES
+------------------------------------------------------------------------------
+
+COUNTRIES (worldtravel_country):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | Integer       | Primary key
+  name                  | String(100)   | Country name
+  country_code          | String(2)     | ISO-2 code (US, IN, etc.)
+  subregion             | String(100)   | Geographic subregion
+  capital               | String(100)   | Capital city
+  latitude              | Decimal(9,6)  | GPS latitude
+  longitude             | Decimal(9,6)  | GPS longitude
+
+REGIONS (worldtravel_region):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | String        | Primary key (e.g., "US-CA")
+  name                  | String(100)   | Region/state name
+  country_id            | FK → Country  | Parent country
+  latitude              | Decimal(9,6)  | GPS latitude
+  longitude             | Decimal(9,6)  | GPS longitude
+
+CITIES (worldtravel_city):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | String        | Primary key
+  name                  | String(100)   | City name
+  region_id             | FK → Region   | Parent region
+  latitude              | Decimal(9,6)  | GPS latitude
+  longitude             | Decimal(9,6)  | GPS longitude
+
+VISITED REGIONS (worldtravel_visitedregion):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | Integer       | Primary key
+  user_id               | FK → User     | User who visited
+  region_id             | FK → Region   | Visited region
+
+VISITED CITIES (worldtravel_visitedcity):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | Integer       | Primary key
+  user_id               | FK → User     | User who visited
+  city_id               | FK → City     | Visited city
+
+------------------------------------------------------------------------------
+7.9 SUPPORTING TABLES
+------------------------------------------------------------------------------
+
+CATEGORIES (adventures_category):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  name                  | String(200)   | Category key (lowercase)
+  display_name          | String(200)   | Display name
+  icon                  | String(200)   | Emoji icon (e.g., 🌍)
+
+NOTES (adventures_note):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  collection_id         | FK → Collection | Parent collection
+  name                  | String(200)   | Note title
+  content               | Text          | Note content (Markdown)
+  links                 | Array[URL]    | Related links
+  date                  | Date          | Note date
+  is_public             | Boolean       | Public visibility
+
+CHECKLISTS (adventures_checklist):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  collection_id         | FK → Collection | Parent collection
+  name                  | String(200)   | Checklist name
+  date                  | Date          | Checklist date
+  is_public             | Boolean       | Public visibility
+
+CHECKLIST ITEMS (adventures_checklistitem):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  checklist_id          | FK → Checklist| Parent checklist
+  name                  | String(200)   | Item name
+  is_checked            | Boolean       | Completion status
+
+TRAILS (adventures_trail):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  location_id           | FK → Location | Associated location
+  name                  | String(200)   | Trail name
+  link                  | URL           | External trail link (AllTrails, etc.)
+  wanderer_id           | String(100)   | Wanderer trail ID
+
+CONTENT IMAGES (adventures_contentimage):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Uploader
+  image                 | Image         | Image file (WEBP)
+  immich_id             | String(200)   | Immich photo ID (optional)
+  is_primary            | Boolean       | Primary image flag
+  content_type_id       | FK            | Generic FK content type
+  object_id             | UUID          | Generic FK object ID
+
+CONTENT ATTACHMENTS (adventures_contentattachment):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Uploader
+  file                  | File          | Attachment file
+  name                  | String(200)   | File name
+  content_type_id       | FK            | Generic FK content type
+  object_id             | UUID          | Generic FK object ID
+
+------------------------------------------------------------------------------
+7.10 INTEGRATIONS TABLES
+------------------------------------------------------------------------------
+
+IMMICH INTEGRATION (integrations_immichintegration):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  server_url            | String(255)   | Immich server URL
+  api_key               | String(255)   | API key
+  copy_locally          | Boolean       | Copy images to local storage
+
+STRAVA TOKENS (integrations_stravatoken):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | Integer       | Primary key
+  user_id               | FK → User     | Owner
+  access_token          | String(255)   | OAuth access token
+  refresh_token         | String(255)   | OAuth refresh token
+  expires_at            | BigInteger    | Token expiry (Unix timestamp)
+  athlete_id            | BigInteger    | Strava athlete ID
+  scope                 | String(255)   | OAuth scopes
+
+WANDERER INTEGRATION (integrations_wandererintegration):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | UUID          | Primary key
+  user_id               | FK → User     | Owner
+  server_url            | String(255)   | Wanderer server URL
+  username              | String(255)   | Wanderer username
+  token                 | String        | Auth token
+  token_expiry          | DateTime      | Token expiration
+
+------------------------------------------------------------------------------
+7.11 ACHIEVEMENTS TABLES
+------------------------------------------------------------------------------
+
+ACHIEVEMENTS (achievements_achievement):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | Integer       | Primary key
+  name                  | String(255)   | Achievement name (unique)
+  key                   | String(255)   | Frontend key (e.g., "achievements.first_adventure")
+  type                  | String(255)   | adventure_count, country_count, etc.
+  description           | Text          | Achievement description
+  icon                  | Image         | Achievement icon
+  condition             | JSON          | Rules (e.g., {"type": "adventure_count", "value": 10})
+
+USER ACHIEVEMENTS (achievements_userachievement):
+  Field                 | Type          | Description
+  ----------------------|---------------|----------------------------------------
+  id                    | Integer       | Primary key
+  user_id               | FK → User     | User who earned it
+  achievement_id        | FK → Achievement | Achievement earned
+  earned_at             | DateTime      | When it was earned
+
+================================================================================
+                              RESOURCES
+================================================================================
+
+• Documentation: https://globalrouter.app
+• Demo: https://demo.globalrouter.app
+• Discord: https://discord.gg/wRbQ9Egr8C
+• GitHub: https://github.com/seanmorley15/Global Router
+
+================================================================================
+                         Created: January 3, 2026
+================================================================================
